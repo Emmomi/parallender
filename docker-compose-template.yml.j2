@@ -1,0 +1,26 @@
+version: "3.8"
+
+x-blender-base: &blender-base
+  image: nvidia/cuda:12.1.0-base-ubuntu22.04
+  runtime: nvidia
+  environment:
+    - NVIDIA_VISIBLE_DEVICES=all
+  volumes:
+    - ./work:/work
+  working_dir: /work
+  command: bash -c "
+    apt-get update &&
+    apt-get install -y blender &&
+    blender -b scene.blend -E CYCLES -- --cycles-device CUDA
+  "
+
+services:
+{% for service in services %}
+  {{ service.name }}:
+    <<: *blender-base
+    command: bash -c "
+      apt-get update &&
+      apt-get install -y blender &&
+      blender -b scene.blend -E CYCLES -s {{ service.start }} -e {{ service.end }} -a -- --cycles-device CUDA
+    "
+{% endfor %}
