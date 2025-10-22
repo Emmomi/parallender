@@ -1,0 +1,35 @@
+version: "3.8"
+
+x-blender-base: &blender-base
+  image: nvidia/cuda:12.1.0-base-ubuntu22.04
+  environment:
+    - NVIDIA_VISIBLE_DEVICES=all
+    - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+  volumes:
+    - ./work:/work
+  working_dir: /work
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
+  
+
+services:
+{% for service in services %}
+  {{ service.name }}:
+    <<: *blender-base
+    command: 
+      - bash
+      - -c 
+      - |
+        apt-get update
+        apt-get install -y xz-utils libgl1 libxrender1 libxi6 libxxf86vm1 libxkbcommon0 libglib2.0-0 libx11-6 libsm6 libice6 nvidia-container-toolkit > /dev/null
+        cp -rp /work/blender-{{ service.version }}-linux-x64 /opt/blender
+        ln -s /opt/blender/blender /usr/local/bin/blender
+        apt-get clean && rm -rf /var/lib/apt/lists/*
+        blender -b {{ service.file }} -o //output__ -F PNG -E CYCLES -s {{ service.start }} -e {{ service.end }} -a -- --cycles-device GPU
+    
+{% endfor %}
