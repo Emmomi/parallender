@@ -52,7 +52,23 @@ Blenderの並列レンダリングシステム
             # s3.upload_file(f"{WORK_DIR}/{f}", S3_BUCKET, f"results/{f}")
             print(f"✅ Uploaded {f}")
     ```
-3. `if __name__ == "__main__":`の前に以下を記述
+3. `cleanup_and_shutdown`を以下に変更
+   ```python
+   def cleanup_and_shutdown():
+    print("🧹 Cleaning up containers...")
+    subprocess.run(["docker-compose", "down"])
+    for item in os.listdir(WORK_DIR):
+        path = os.path.join(WORK_DIR, item)
+        if item.endswith(".blend") OR item.endswith(".mp4"):
+            continue
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+            print(f"Deleted directory: {path}")
+        elif os.path.isfile(path):
+            os.remove(path)
+            print(f"Deleted file: {path}")
+   ```
+5. `if __name__ == "__main__":`の前に以下を記述
     ```python
     S3_BUCKET = None
     ```
